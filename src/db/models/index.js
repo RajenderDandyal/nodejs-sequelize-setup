@@ -65,7 +65,7 @@ db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 db.sequelize.sync({
   logging: false,
-  //force: true,
+  force: true,
 });
 //console.log('user', db.User);
 export default db;

@@ -9,7 +9,12 @@ module.exports = (sequelize, DataTypes) => {
       password: DataTypes.STRING,
       authToken: {
         type: DataTypes.STRING,
+        defaultValue: null,
       },
+      role: {
+        type: DataTypes.STRING,
+        defaultValue: 0,
+      }, // 0 user,1 admin
     },
     {},
   );
