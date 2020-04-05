@@ -6,9 +6,9 @@ import compression from 'compression';
 import cors from 'cors';
 import expressSanitizer from 'express-sanitizer';
 import helmet from 'helmet';
-import swaggerUi from 'swagger-ui-express';
-import jsYaml from 'js-yaml';
-import fs from 'fs';
+// import swaggerUi from 'swagger-ui-express';
+// import jsYaml from 'js-yaml';
+// import fs from 'fs';
 import path from 'path';
 require('dotenv').config({
   path:

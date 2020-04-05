@@ -3,9 +3,9 @@ import isEmpty from 'lodash/isEmpty';
 import mongoose from 'mongoose';
 
 import { constants } from '../constants';
-import db from '../models';
+import db from '../db/models';
 import { dbCrud } from './dbCrud';
-import config from './keys';
+import { keys } from './keys';
 
 let responseObj = {
   status: 400,
@@ -23,7 +23,7 @@ class JwtToken {
         if (tokenFromHeaders) {
           jwt.verify(
             tokenFromHeaders,
-            config.JWT_SECRET_KEY,
+            keys.JWT_SECRET_KEY,
             async (err, token) => {
               if (err) {
                 res.redirect(
@@ -90,7 +90,7 @@ class JwtToken {
   };
 
   generateBearerToken = async id => {
-    const token = await jwt.sign({ _id: id }, config.JWT_SECRET_KEY, {
+    const token = await jwt.sign({ _id: id }, keys.JWT_SECRET_KEY, {
       expiresIn: 60 * 60,
     }); // 1hr exp
     console.log(token);
