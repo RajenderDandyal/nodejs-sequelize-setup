@@ -1,0 +1,289 @@
+swagger: "2.0"
+info:
+  description: "Didn't updated all routes to exactly match the actual route... see routes/user.js for detail"
+  version: "1.0.0"
+  title: "Node-backend-setup"
+  termsOfService: "http://swagger.io/terms/"
+  contact:
+    email: "raj@gmail.com"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+host: "localhost:8081"
+basePath: "/api/v1"
+schemes:
+- "http"
+securityDefinitions:
+  Bearer:
+    type: apiKey
+    name: Authorization
+    in: header
+paths:
+  /user:
+    post:
+      tags:
+      - "User Module"
+      summary: "Create user"
+      description: "API to create user"
+      parameters:
+      - in: "body"
+        name: "createUserRequest"
+        description: "Create user"
+        required: true
+        schema:
+          $ref: "#/definitions/createUserRequest"
+      produces:
+      - "application/json"
+      responses:
+        '200':
+          description: "User created successfully"
+          schema:
+            $ref: '#/definitions/createUserResponse'
+        '400':
+          description: "Bad Request - Required fields not present"
+        '500':
+          description: "Internal Server Error"
+  "/user/list":
+    get:
+      tags:
+      - "User Module"
+      summary: "Fetch user list"
+      description: "Fetch user list"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "skip"
+        in: "query"
+        description: "No.of record to be skipped for pagination"
+        type: "number"
+        required: false
+      - name: "limit"
+        in: "query"
+        description: "no. of record api should return for pagination"
+        type: "number"
+        required: false
+      responses:
+        '200':
+          description: "User Fetched Successfully"
+          schema:
+            $ref: '#/definitions/FetchCustomerListResponse'
+        '400':
+          description: "Bad Request - Required fields not present"
+        '500':
+          description: "Internal Server Error"
+  "/user/detail/{userId}":
+    get:
+      security:
+      - Bearer: []
+      tags:
+      - "User Module"
+      summary: "Fetch user detail"
+      description: "Fetch user detail"
+      parameters:
+      - name: "userId"
+        required: true
+        in: "path"
+        description: "User Id whose detail is to be fetched"
+        type: "string"
+      produces:
+      - "application/json"
+      responses:
+        '200':
+          description: "User Fetched Successfully"
+          schema:
+            $ref: '#/definitions/FetchUserDetailResponse'
+        '400':
+          description: "Bad Request - Required fields not present"
+        '500':
+          description: "Internal Server Error"
+  "/user/auth":
+    post:
+      tags:
+      - "User Module"
+      summary: "Authenticate user"
+      description: "Authenticate user"
+
+      parameters:
+      # depends on project to project like auth header cookie  body etc
+      - in: "body"
+        name: "authenticateUserRequest"
+        description: "authenticateUserRequest"
+        required: true
+        schema:
+          $ref: "#/definitions/authenticateUserRequest"
+      produces:
+      - "application/json"
+      responses:
+        '200':
+          description: "User authenticated successfully"
+          schema:
+            $ref: '#/definitions/createUserResponse'
+        '400':
+          description: "Bad Request - Required fields not present"
+        '500':
+          description: "Internal Server Error"
+  "/user/delete/{userId}":
+    delete:
+      security:
+      - Bearer: []
+      tags:
+      - "User Module"
+      summary: "Remove user"
+      description: "Remove user"
+      parameters:
+      - name: "userId"
+        required: true
+        in: "path"
+        description: "id of user who needs to be removed"
+        type: "string"
+      produces:
+      - "application/json"
+      responses:
+        '204':
+          description: "User Deleted Successfully"
+        '400':
+          description: "Bad Request - Required fields not present"
+        '500':
+          description: "Internal Server Error"
+definitions:
+  # A general message schema in case of an error
+  Error:
+    required:
+    - message
+    - status
+    - error
+    properties:
+      status:
+        type: number
+        enum:
+        - 400
+        - 401
+        - 404
+        - 500
+      message:
+        type: string
+        example:  'Bad request from client'
+      error:
+        type: object
+        example:  {"error":'Bad request from client'}
+
+  GeneralResponse:
+    required:
+    - message
+    - status
+    - body
+    properties:
+      status:
+        type: number
+      message:
+        type: string
+      body:
+        type: array
+
+  # user document
+  # always create document and collection as done below then use $ref to attach to any query
+  User:
+    required:
+    - name
+    - phone
+    - email
+    properties:
+      name:
+        type: string
+        minimum:  6
+        maximum:  40
+      email:
+        type: string
+      phone:
+        type: number
+        minimum:  10
+        maximum:  10
+      role:
+        type: number
+        minimum:  1
+        maximum:  1
+    example:
+      {
+        name: 'rajender',
+        email: 'raj123@gm.com',
+        phone: 9996051456,
+        role: 0
+      }
+  # Collection of users
+  Users:
+    type: array
+    items:
+      $ref: "#/definitions/User"
+    minItems: 0
+    maxItems: 12
+
+
+  createUserRequest:
+    required:
+    - "name"
+    - "phone"
+    - "email"
+    properties:
+      name:
+        type: "string"
+        minimum:  6
+        maximum:  50
+        description: "name of user"
+        example:  "rajender dandyal"
+      email:
+        type: "string"
+        minimum:  6
+        maximum:  20
+        description: "email of the user"
+        example: "raj123@gm.com"
+      phone:
+        type: "string"
+        minimum:  10
+        maximum:  10
+        description: "Phone no. of user"
+        example:  "123456789"
+
+  createUserResponse:
+    type: "object"
+    properties:
+      status:
+        type: "integer"
+      message:
+        type: "string"
+      body:
+        type: "array"
+        items:
+          $ref: "#/definitions/User"
+  FetchCustomerListResponse:
+    type: "object"
+    properties:
+      status:
+        type: "integer"
+      message:
+        type: "string"
+      body:
+        $ref: "#/definitions/Users"
+  FetchUserDetailResponse:
+    type: "object"
+    properties:
+      status:
+        type: "integer"
+      message:
+        type: "string"
+      body:
+        type: "array"
+        items:
+          $ref: "#/definitions/User"
+  authenticateUserRequest:
+    required:
+    - "name"
+    - "email"
+    - "_id"
+    properties:
+      name:
+        type: "string"
+        description: "name of user"
+      email:
+        type: "string"
+        description: "email of the user"
+

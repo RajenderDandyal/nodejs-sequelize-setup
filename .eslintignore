@@ -1,0 +1,16 @@
+# bin folder
+bin
+# build folder 
+build
+dist
+
+# exclude src
+!src/**
+
+
+/.git
+/.vscode
+/.idea
+/coverage
+/build
+node_modules
