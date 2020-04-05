@@ -1,6 +1,6 @@
 import isEmpty from 'lodash/isEmpty';
 
-//import User from '../models/databaseModel/User';
+import db from '../db/models';
 import { dbCrud } from '../helper/dbCrud/index';
 import { helperMethods, jwtToken, bcryptPassword } from '../helper';
 
@@ -13,31 +13,10 @@ class UserController {
   };
 
   signUpUser = async (req, res) => {
-    // let responseObj = {};
     // try {
-    //   let userWithSameEmail = await dbCrud.find(User, {
-    //     dbQuery: { email: req.body.email },
-    //   });
-    //   if (!isEmpty(userWithSameEmail.body[0])) {
-    //     responseObj.status = 400;
-    //     responseObj.message = 'User already exists';
-    //     responseObj.error = [{ message: 'email should be unique' }];
-    //     return res.status(400).send(responseObj);
-    //   }
-    //   let data = req.body;
-    //   data.password = await bcryptPassword.bcryptHash(data.password);
-    //   //console.log("req.body**", data);
-    //   if (data.password) {
-    //     responseObj = await dbCrud.insertData(User, data);
-    //     return res.status(responseObj.status).send(responseObj);
-    //   } else {
-    //     // console.log("bcrypt error")
-    //     responseObj.status = 500;
-    //     responseObj.message = 'password could not be hashed';
-    //     responseObj.error = [
-    //       { message: 'password could not be hashed' },
-    //     ];
-    //     return res.status(500).json(responseObj);
+    //   let response = await dbCrud.insertData(db.User, req.body);
+    //   if (response) {
+    //     return res.json(response);
     //   }
     // } catch (err) {
     //   console.log(
@@ -46,66 +25,97 @@ class UserController {
     //   );
     //   return helperMethods.catchErrorController(err, req, res);
     // }
+
+    let responseObj = {};
+    try {
+      let userWithSameEmail = await dbCrud.findAndCountAll(db.User, {
+        where: { email: req.body.email },
+      });
+      console.log(userWithSameEmail);
+      if (!isEmpty(userWithSameEmail.body[0]['rows'])) {
+        responseObj.status = 400;
+        responseObj.message = 'User already exists';
+        responseObj.error = [{ message: 'email should be unique' }];
+        return res.status(400).send(responseObj);
+      }
+      let data = req.body;
+      data.password = await bcryptPassword.bcryptHash(data.password);
+      //console.log("req.body**", data);
+      if (data.password) {
+        responseObj = await dbCrud.insertData(db.User, data);
+        return res.status(responseObj.status).send(responseObj);
+      } else {
+        // console.log("bcrypt error")
+        responseObj.status = 500;
+        responseObj.message = 'password could not be hashed';
+        responseObj.error = [
+          { message: 'password could not be hashed' },
+        ];
+        return res.status(500).json(responseObj);
+      }
+    } catch (err) {
+      console.log(
+        'Something went wrong: Controller: signUp user',
+        err,
+      );
+      return helperMethods.catchErrorController(err, req, res);
+    }
   };
   signInUser = async (req, res) => {
-    // let responseObj = {};
-    // try {
-    //   let data = req.body;
-    //   let userFromDb = await User.find({ email: data.email });
-    //   console.log(userFromDb);
-    //   if (
-    //     !isEmpty(userFromDb) &&
-    //     userFromDb.length === 1 &&
-    //     Array.isArray(userFromDb)
-    //   ) {
-    //     let isMatch = await bcryptPassword.comparePasswords(
-    //       data.password,
-    //       userFromDb[0].password,
-    //     );
-    //     console.log('isMatch', isMatch);
-    //     if (isMatch) {
-    //       let bearerToken = await jwtToken.generateBearerToken(
-    //         userFromDb[0]._id,
-    //       );
-    //       // only one auth token is allowed
-    //       // so remove previous one and add new one
-    //       userFromDb[0].token = userFromDb[0].token.filter(
-    //         item => item.tokenFor !== 'authentication',
-    //       );
-    //       let tokenObj = {
-    //         tokenFor: 'authentication',
-    //         token: bearerToken,
-    //       };
-    //       userFromDb[0].token.push(tokenObj);
-    //       await userFromDb[0].save();
-    //       //console.log(bearerToken);
-    //       responseObj = {
-    //         status: 200,
-    //         message: 'Success',
-    //         body: [tokenObj],
-    //       };
-    //       return res.status(responseObj.status).send(responseObj);
-    //     } else {
-    //       // console.log("bcrypt error")
-    //       responseObj.status = 500;
-    //       responseObj.message = 'Password invalid';
-    //       responseObj.error = [{ message: 'Passward is invalid' }];
-    //       return res.status(500).json(responseObj);
-    //     }
-    //   } else {
-    //     // console.log("bcrypt error")
-    //     responseObj.status = 400;
-    //     responseObj.message = 'User not found';
-    //     responseObj.error = [{ message: 'User not found' }];
-    //     return res.status(400).json(responseObj);
-    //   }
-    // } catch (err) {
-    //   console.log(
-    //     'Something went wrong: Controller: signIn user',
-    //     err,
-    //   );
-    //   return helperMethods.catchErrorController(err, req, res);
-    // }
+    let responseObj = {};
+    try {
+      let data = req.body;
+      let userFromDb = await db.User.findAndCountAll({
+        email: data.email,
+      });
+      console.log(userFromDb);
+      if (
+        !isEmpty(userFromDb[0]['rows']) &&
+        userFromDb.length === 1 &&
+        Array.isArray(userFromDb[0]['rows'])
+      ) {
+        let isMatch = await bcryptPassword.comparePasswords(
+          data.password,
+          userFromDb[0]['rows'][0].password,
+        );
+        console.log('isMatch', isMatch);
+        if (isMatch) {
+          let bearerToken = await jwtToken.generateBearerToken(
+            userFromDb[0]['rows'][0].id,
+          );
+          // only one auth token is allowed
+          // so remove previous one and add new one
+
+          userFromDb[0]['rows'][0].authToken = bearerToken;
+          await userFromDb[0]['rows'][0].save();
+          //console.log(bearerToken);
+          responseObj = {
+            status: 200,
+            message: 'Success',
+            body: [tokenObj],
+          };
+          return res.status(responseObj.status).send(responseObj);
+        } else {
+          // console.log("bcrypt error")
+          responseObj.status = 500;
+          responseObj.message = 'Password invalid';
+          responseObj.error = [{ message: 'Passward is invalid' }];
+          return res.status(500).json(responseObj);
+        }
+      } else {
+        // console.log("bcrypt error")
+        responseObj.status = 400;
+        responseObj.message = 'User not found';
+        responseObj.error = [{ message: 'User not found' }];
+        return res.status(400).json(responseObj);
+      }
+    } catch (err) {
+      console.log(
+        'Something went wrong: Controller: signIn user',
+        err,
+      );
+      return helperMethods.catchErrorController(err, req, res);
+    }
   };
   signOutUser = async (req, res) => {
     // try {

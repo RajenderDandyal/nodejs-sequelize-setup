@@ -6,12 +6,7 @@ class DbCrud {
   insertData = (Model, data, options) => {
     return new Promise(async (resolve, reject) => {
       try {
-        let doc = Model.create(
-          {
-            ...data,
-          },
-          options,
-        );
+        let doc = await Model.create(data, options);
 
         //console.log("insertDB==========",doc)
         if (doc) {
