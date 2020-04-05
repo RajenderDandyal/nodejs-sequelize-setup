@@ -13,15 +13,22 @@ class Constants extends ControllerConstants {
       };
     };
     // used inside db class ..try for bad request case
-    this.responseObjError = (err, message) => {
+    this.responseObjError = (
+      err,
+      message = constants.controllerStatus.BAD_REQUEST,
+      status = 400,
+    ) => {
       return {
-        status: 400,
+        status,
         message,
         error: [{ message: err }],
       };
     };
     // used inside db class .try success case
-    this.responseObjSuccess = (doc, message) => {
+    this.responseObjSuccess = (
+      doc,
+      message = constants.controllerStatus.QUERY_SUCCESS,
+    ) => {
       return {
         status: 200,
         message,

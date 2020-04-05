@@ -10,12 +10,7 @@ class DbCrud {
 
         //console.log("insertDB==========",doc)
         if (doc) {
-          return resolve(
-            constants.responseObjSuccess(
-              doc,
-              constants.dataBaseStatus.ENTITY_CREATED,
-            ),
-          );
+          return resolve(doc);
         } else {
           return reject(
             constants.responseObjError(
@@ -39,22 +34,7 @@ class DbCrud {
     return new Promise(async (resolve, reject) => {
       try {
         const doc = await model.findAndCountAll(options);
-
-        if (isEmpty(doc)) {
-          return resolve(
-            constants.responseObjSuccess(
-              [],
-              constants.dataBaseStatus.DATA_NOTHING_FOUND,
-            ),
-          );
-        } else {
-          return resolve(
-            constants.responseObjSuccess(
-              doc,
-              constants.dataBaseStatus.DATA_FETCHED,
-            ),
-          );
-        }
+        return resolve(doc);
       } catch (e) {
         console.log('Something went wrong inside: db find', e);
         return reject(
@@ -67,24 +47,27 @@ class DbCrud {
     });
   };
 
+  findAll = (model, options) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const doc = await model.findAll(options);
+        return resolve(doc);
+      } catch (e) {
+        console.log('Something went wrong inside: db find', e);
+        return reject(
+          constants.responseObjErrorDb(
+            e,
+            constants.dataBaseStatus.DATA_FETCH_ERROR,
+          ),
+        );
+      }
+    });
+  };
   update = (model, data, options) => {
     return new Promise(async (resolve, reject) => {
       try {
         const doc = await model.update(data, options);
-        if (isEmpty(doc)) {
-          return reject(
-            constants.responseObjError(
-              doc,
-              constants.dataBaseStatus.DATA_FETCH_ERROR,
-            ),
-          );
-        }
-        return resolve(
-          constants.responseObjSuccess(
-            doc,
-            constants.dataBaseStatus.ENTITY_MODIFIED,
-          ),
-        );
+        return resolve(doc);
       } catch (e) {
         console.log('Something went wrong inside: db updateOne', e);
         reject(
@@ -101,20 +84,7 @@ class DbCrud {
       try {
         const doc = await model.findByIdAndRemove(data.query);
 
-        if (isEmpty(doc)) {
-          return reject(
-            constants.responseObjError(
-              doc,
-              constants.dataBaseStatus.DATA_FETCH_ERROR,
-            ),
-          );
-        }
-        return resolve(
-          constants.responseObjSuccess(
-            doc,
-            constants.dataBaseStatus.ENTITY_DELETED,
-          ),
-        );
+        return resolve(doc);
       } catch (e) {
         console.log('Something went wrong inside: db insertData', e);
         return reject(

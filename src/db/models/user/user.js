@@ -8,7 +8,7 @@ module.exports = (sequelize, DataTypes) => {
       phone: DataTypes.BIGINT,
       password: DataTypes.STRING,
       authToken: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.STRING,
       },
     },
     {},

@@ -1,8 +1,9 @@
 import isEmpty from 'lodash/isEmpty';
 
 import db from '../db/models';
-import { dbCrud } from '../helper/dbCrud/index';
+
 import { helperMethods, jwtToken, bcryptPassword } from '../helper';
+import { constants } from '../constants';
 
 class UserController {
   test = (req, res) => {
@@ -13,26 +14,13 @@ class UserController {
   };
 
   signUpUser = async (req, res) => {
-    // try {
-    //   let response = await dbCrud.insertData(db.User, req.body);
-    //   if (response) {
-    //     return res.json(response);
-    //   }
-    // } catch (err) {
-    //   console.log(
-    //     'Something went wrong: Controller: signUp user',
-    //     err,
-    //   );
-    //   return helperMethods.catchErrorController(err, req, res);
-    // }
-
     let responseObj = {};
     try {
-      let userWithSameEmail = await dbCrud.findAndCountAll(db.User, {
+      let userWithSameEmail = await db.User.findAll({
         where: { email: req.body.email },
       });
       console.log(userWithSameEmail);
-      if (!isEmpty(userWithSameEmail.body[0]['rows'])) {
+      if (!isEmpty(userWithSameEmail)) {
         responseObj.status = 400;
         responseObj.message = 'User already exists';
         responseObj.error = [{ message: 'email should be unique' }];
@@ -42,16 +30,14 @@ class UserController {
       data.password = await bcryptPassword.bcryptHash(data.password);
       //console.log("req.body**", data);
       if (data.password) {
-        responseObj = await dbCrud.insertData(db.User, data);
-        return res.status(responseObj.status).send(responseObj);
+        let response = await db.User.create(data);
+
+        return res
+          .status(200)
+          .send(constants.responseObjSuccess(response));
       } else {
         // console.log("bcrypt error")
-        responseObj.status = 500;
-        responseObj.message = 'password could not be hashed';
-        responseObj.error = [
-          { message: 'password could not be hashed' },
-        ];
-        return res.status(500).json(responseObj);
+        return res.status(400).json(constants.responseObjError({}));
       }
     } catch (err) {
       console.log(
@@ -65,49 +51,52 @@ class UserController {
     let responseObj = {};
     try {
       let data = req.body;
-      let userFromDb = await db.User.findAndCountAll({
-        email: data.email,
+      let response = await db.User.findAll({
+        where: { email: req.body.email },
       });
-      console.log(userFromDb);
-      if (
-        !isEmpty(userFromDb[0]['rows']) &&
-        userFromDb.length === 1 &&
-        Array.isArray(userFromDb[0]['rows'])
-      ) {
+      let user = response[0];
+      // userFromDb = userFromDb.body
+      //   ? userFromDb.body[0].rows[0]
+      //   : null;
+      //userFromDb = userFromDb.toJson();
+      //console.log(userFromDb);
+      if (!isEmpty(user)) {
         let isMatch = await bcryptPassword.comparePasswords(
           data.password,
-          userFromDb[0]['rows'][0].password,
+          user.password,
         );
         console.log('isMatch', isMatch);
         if (isMatch) {
           let bearerToken = await jwtToken.generateBearerToken(
-            userFromDb[0]['rows'][0].id,
+            user.id,
           );
-          // only one auth token is allowed
-          // so remove previous one and add new one
 
-          userFromDb[0]['rows'][0].authToken = bearerToken;
-          await userFromDb[0]['rows'][0].save();
-          //console.log(bearerToken);
-          responseObj = {
-            status: 200,
-            message: 'Success',
-            body: [tokenObj],
-          };
-          return res.status(responseObj.status).send(responseObj);
+          await db.User.update(
+            { authToken: bearerToken },
+            { where: { id: user.id }, returning: true },
+          );
+          let updatedRecord = await db.User.findByPk(user.id);
+          console.log(updatedRecord);
+          return res
+            .status(200)
+            .send(constants.responseObjSuccess(updatedRecord));
         } else {
           // console.log("bcrypt error")
-          responseObj.status = 500;
-          responseObj.message = 'Password invalid';
-          responseObj.error = [{ message: 'Passward is invalid' }];
-          return res.status(500).json(responseObj);
+          return res
+            .status(500)
+            .json(
+              constants.responseObjError(
+                {},
+                'Password is invalid',
+                500,
+              ),
+            );
         }
       } else {
         // console.log("bcrypt error")
-        responseObj.status = 400;
-        responseObj.message = 'User not found';
-        responseObj.error = [{ message: 'User not found' }];
-        return res.status(400).json(responseObj);
+        return res
+          .status(400)
+          .json(constants.responseObjError({}, 'User not found'));
       }
     } catch (err) {
       console.log(
@@ -118,26 +107,21 @@ class UserController {
     }
   };
   signOutUser = async (req, res) => {
-    // try {
-    //   let responseObj = {};
-    //   let user = req.user;
-    //   user.token = user.token.filter(
-    //     item => item.tokenFor !== 'authentication',
-    //   );
-    //   await user.save();
-    //   //let user = User.findById(req.user._id);
-    //   //console.log(user);
-    //   responseObj.status = 200;
-    //   responseObj.message = 'User logged out';
-    //   responseObj.body = [];
-    //   return res.json(responseObj);
-    // } catch (e) {
-    //   console.log(
-    //     'Something went wrong: Controller: signOut user',
-    //     e,
-    //   );
-    //   return helperMethods.catchErrorController(e, req, res);
-    // }
+    try {
+      let user = req.user;
+      user.authToken = null;
+      await user.save();
+
+      return res.json(
+        constants.responseObjSuccess(user, 'User logged out'),
+      );
+    } catch (e) {
+      console.log(
+        'Something went wrong: Controller: signOut user',
+        e,
+      );
+      return helperMethods.catchErrorController(e, req, res);
+    }
   };
 
   list = async (req, res) => {
@@ -155,7 +139,7 @@ class UserController {
     //         },
     //   };
     //   //console.log('req.body**', req.query.skip, req.query.limit);
-    //   responseObj = await dbCrud.find(User, data);
+    //   responseObj = await db.User.find(User, data);
     //   return res.status(responseObj.status).send(responseObj);
     // } catch (err) {
     //   console.log(
@@ -208,7 +192,7 @@ class UserController {
     //   let data = {
     //     query: { _id: mongoose.Types.ObjectId(req.user.id) },
     //   };
-    //   responseObj = await dbCrud.deleteOne(User, data);
+    //   responseObj = await db.User.deleteOne(User, data);
     //   return res.status(responseObj.status).send(responseObj);
     // } catch (err) {
     //   console.log(

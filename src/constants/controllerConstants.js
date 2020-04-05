@@ -8,6 +8,7 @@ class ControllerConstants extends DatabaseConstants {
       TOKEN_MISSING: 'Token is missing',
       INVALID_TOKEN: 'Token is invalid',
       USER_AUTHENTICATED: 'User authenticated',
+      QUERY_SUCCESS: 'QUERY_SUCCESS',
     };
   }
 }
